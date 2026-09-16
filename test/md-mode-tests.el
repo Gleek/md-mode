@@ -1348,11 +1348,12 @@
             (set-window-buffer (selected-window) buffer)
             (with-current-buffer buffer
               (let* ((md-mode-auto-align-tables nil)
+                     (width (md-render--window-columns (selected-window)))
                      (source
                       (concat "| Name | Description |\n"
                               "|---|---|\n"
                               "| A | "
-                              (make-string (+ (window-body-width) 20) ?x)
+                              (make-string (+ width 20) ?x)
                               " |\n")))
                 (insert source)
                 (setq-local truncate-lines nil)
@@ -1461,6 +1462,10 @@
            (md-render-table-wrap-columns t))
       (cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _) t))
                 ((symbol-function 'window-font-width) (lambda (&rest _) 10))
+                ;; The clamped budget is covered by its own test; here the
+                ;; pixel allocation for these widths is what matters.
+                ((symbol-function 'md-render--window-columns)
+                 (lambda (&rest _) 1000))
                 ((symbol-function 'md-render--table-char-pixel-width)
                  (lambda (_) 10))
                 ((symbol-function 'md-render--table-measure-string)
@@ -1553,9 +1558,10 @@
 
 (ert-deftest md-mode-table-widget-budget-never-exceeds-window-pixels ()
   "A `fixed-pitch' wider than the frame font must not widen the table.
-`window-body-width' counts 7px Iosevka columns here while the
-mocked `fixed-pitch' space measures 10px; the budget must clamp to
-the window's 700 real pixels instead of 1000."
+Only 100 characters fit here (as `md-render--window-columns' says)
+even though `window-body-width' reports 106; the mocked
+`fixed-pitch' space measures 10px, so the budget must clamp to the
+window's 700 real pixels instead of 1000."
   (with-temp-buffer
     (let* ((source (concat "| 模块 | 目标 | 要做 |\n| --- | --- | --- |\n"
                            "| A | short | 用户面只留 sync-status "
@@ -1570,7 +1576,9 @@ the window's 700 real pixels instead of 1000."
                    (md-mode-tests--table-test-string-pixels string)))
                 ((symbol-function 'window-body-width)
                  (lambda (&optional _window pixelwise)
-                   (if pixelwise 700 100))))
+                   (if pixelwise 700 106)))
+                ((symbol-function 'md-render--window-columns)
+                 (lambda (&rest _) 100)))
         (should (= (md-render--table-widget-pixel-budget 100 (selected-window))
                    700))
         ;; A narrower request keeps the measured unit.
@@ -1582,9 +1590,13 @@ the window's 700 real pixels instead of 1000."
 
 (defmacro md-mode-tests--with-table-pixel-mocks (&rest body)
   "Run BODY with deterministic table pixel measurement.
-Mock font width as well as GUI detection so batch tests need no real fonts."
+Mock font width as well as GUI detection so batch tests need no real fonts.
+The mocked window fits more characters than these tests lay out, so the
+pixel clamp, which is tested separately, stays out of their way."
   `(cl-letf (((symbol-function 'display-graphic-p) (lambda (&optional _) t))
              ((symbol-function 'window-font-width) (lambda (&rest _) 10))
+             ((symbol-function 'md-render--window-columns)
+              (lambda (&rest _) 1000))
              ((symbol-function 'md-render--table-char-pixel-width)
               (lambda (_) 10))
              ((symbol-function 'md-render--table-measure-string)
@@ -1833,7 +1845,7 @@ character per line."
       (let ((point-text (thing-at-point 'line t)))
         (cl-letf (((symbol-function 'get-buffer-window-list)
                    (lambda (&rest _) (list (selected-window))))
-                  ((symbol-function 'window-body-width)
+                  ((symbol-function 'md-render--window-columns)
                    (lambda (&rest _) 30)))
           (md-mode--refresh-table-widget-layout))
         (should (equal (thing-at-point 'line t) point-text)))
@@ -1846,6 +1858,40 @@ character per line."
                              "| A | A sufficiently long value to wrap at narrow widths |\n\n"
                              "After table.\n"))))))
 
+(ert-deftest md-mode-table-width-follows-window-columns-not-body-width ()
+  "Table width must be the characters that fit, not `window-body-width'.
+`fringe-mode' 0 reserves the last body column for the continuation
+glyph and `text-scale-mode' enlarges every glyph, so the body width
+always overstates the usable width."
+  (save-window-excursion
+    (let ((buffer (generate-new-buffer " *md-mode-columns*"))
+          widths)
+      (unwind-protect
+          (progn
+            (set-window-buffer (selected-window) buffer)
+            (with-current-buffer buffer
+              (insert "| Name | Description |\n| --- | --- |\n| A | value |\n")
+              (put-text-property (point-min) (point-max)
+                                 'md-render-table-source (buffer-string))
+              (let* ((body-width (window-body-width (selected-window)))
+                     ;; N columns reported, N-1 characters that fit.
+                     (columns (1- body-width)))
+                (should (>= columns 1))
+                (cl-letf (((symbol-function 'md-render--window-columns)
+                           (lambda (&rest _) columns))
+                          ((symbol-function 'textui-layout-widget)
+                           (lambda (_widget width)
+                             (push width widths)
+                             "| rendered |\n"))
+                          ((symbol-function 'textui-attach-widget)
+                           (lambda (&rest _) nil)))
+                  (should (= (md-mode--render-width) columns))
+                  (md-mode--attach-table-widgets))
+                (should (equal widths (list columns)))
+                (should (= md-mode--table-widget-width columns))
+                (should (< columns body-width))))
+        (kill-buffer buffer))))))
+
 (ert-deftest md-mode-text-scale-forces-table-widget-relayout ()
   (with-temp-buffer
     (insert "| A | B |\n| --- | --- |\n| C | D |\n")
@@ -1855,7 +1901,8 @@ character per line."
     (let ((calls 0))
       (cl-letf (((symbol-function 'get-buffer-window-list)
                  (lambda (&rest _) (list (selected-window))))
-                ((symbol-function 'window-body-width) (lambda (&rest _) 40))
+                ((symbol-function 'md-render--window-columns)
+                 (lambda (&rest _) 40))
                 ((symbol-function 'textui-layout-widget)
                  (lambda (widget width)
                    (setq calls (1+ calls))
@@ -1874,7 +1921,8 @@ character per line."
           (md-mode-table-relayout-delay 0.15))
       (cl-letf (((symbol-function 'get-buffer-window-list)
                  (lambda (&rest _) (list (selected-window))))
-                ((symbol-function 'window-body-width) (lambda (&rest _) 30))
+                ((symbol-function 'md-render--window-columns)
+                 (lambda (&rest _) 30))
                 ((symbol-function 'md-mode--refresh-table-widget-layout)
                  (lambda (&optional _) (setq calls (1+ calls)))))
         (md-mode--schedule-table-widget-relayout)

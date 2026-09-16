@@ -1975,13 +1975,20 @@ left untouched."
            '(md-render-frozen t
                               rear-nonsticky (md-render-frozen)))))))))
 
+(defun md-render--window-columns (window)
+  "Return the number of characters that fit on one line of WINDOW.
+Unlike `window-body-width', the result excludes the column reserved
+for the continuation glyph and follows the default face's glyph
+size, so `fringe-mode' and `text-scale-mode' are both accounted for."
+  (window-max-chars-per-line window))
+
 (defun md-render--display-width ()
   "Return a usable display width for divider rendering.
-Tries the selected window's body width and falls back to 80
-characters when no usable window is available (e.g. batch)."
+Tries the selected window's usable character width and falls back
+to 80 characters when no usable window is available (e.g. batch)."
   (let ((window (selected-window)))
     (if (window-live-p window)
-        (window-body-width window)
+        (md-render--window-columns window)
       80)))
 
 (cl-defun md-render--style-source-blocks (&key (highlight-blocks t))
@@ -3665,23 +3672,23 @@ cannot starve the other columns."
 (defun md-render--table-widget-pixel-budget (width window)
   "Return the pixel budget for a table laid out at WIDTH columns in WINDOW.
 
-WIDTH comes from `window-body-width', which counts columns of the
-frame's default font.  Converting it back with the `fixed-pitch'
-space width overshoots whenever `default' and `fixed-pitch' use
-fonts of different advance (an Iosevka frame whose `fixed-pitch'
-falls back to Courier is 14% too wide), and likewise under
-`text-scale-mode'.  So when WIDTH fills WINDOW, never exceed the
-window's real body pixel width.  The clamp is skipped when the
-window reports pixels no larger than its column count (batch
-frames and mocked windows), where the measurement is the only
-meaningful unit."
+WIDTH comes from `md-render--window-columns', which counts the
+characters that fit in WINDOW (see `window-max-chars-per-line').
+Converting it back with the `fixed-pitch' space width overshoots
+whenever `default' and `fixed-pitch' use fonts of different
+advance (an Iosevka frame whose `fixed-pitch' falls back to
+Courier is 14% too wide).  So when WIDTH fills WINDOW's character
+columns, never exceed the window's real body pixel width.  The
+clamp is skipped when the window reports pixels no larger than its
+column count (batch frames and mocked windows), where the
+measurement is the only meaningful unit."
   (let ((measured (md-render--table-measure-string
                    (make-string width ?\s) window))
         (body-pixels (and (window-live-p window)
                           (window-body-width window t))))
     (if (and body-pixels
              (> body-pixels width)
-             (>= width (window-body-width window)))
+             (>= width (md-render--window-columns window)))
         (min measured body-pixels)
       measured)))
 

@@ -2415,7 +2415,7 @@ Preserve rendered properties when Font Lock is disabled or restarted."
   "Return the width available to rendered block widgets."
   (let ((window (get-buffer-window (current-buffer))))
     (if (window-live-p window)
-        (window-body-width window)
+        (md-render--window-columns window)
       80)))
 
 (defun md-mode--clear-table-widgets ()
@@ -2436,7 +2436,7 @@ Preserve rendered properties when Font Lock is disabled or restarted."
   "Return non-nil when the visible window width no longer matches the tables."
   (when (and md-mode--rendered-p md-mode--table-widgets)
     (let ((widths (delete-dups
-                   (mapcar #'window-body-width
+                   (mapcar #'md-render--window-columns
                            (get-buffer-window-list (current-buffer) nil t)))))
       (and (= (length widths) 1)
            (not (equal (car widths) md-mode--table-widget-width))))))
@@ -2506,7 +2506,7 @@ one relayout when it ends instead of one per step."
 When FORCE is non-nil, relayout even when the character width is unchanged."
   (when (and md-mode--rendered-p md-mode--table-widgets)
     (let* ((windows (get-buffer-window-list (current-buffer) nil t))
-           (widths (delete-dups (mapcar #'window-body-width windows))))
+           (widths (delete-dups (mapcar #'md-render--window-columns windows))))
       (when (and (= (length widths) 1)
                  (or force
                      (not (equal (car widths)
