@@ -5,7 +5,7 @@
 ;; Author: yibie <https://github.com/yibie>
 ;; Assisted-by: Codex:gpt-5.5
 ;; URL: https://github.com/yibie/md-mode
-;; Version: 0.4.1
+;; Version: 0.5.0
 ;; Package-Requires: ((emacs "29.1") (textui "0.7.0"))
 ;; Keywords: wp, convenience
 ;; SPDX-License-Identifier: GPL-3.0-or-later
