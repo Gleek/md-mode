@@ -431,7 +431,6 @@ Run the complete test suite:
 
 ```sh
 emacs -Q --batch -L . -L /path/to/textui \
-  -l test/md-render-tests.el \
   -l test/md-mode-tests.el \
   -f ert-run-tests-batch-and-exit
 ```
@@ -446,5 +445,10 @@ The renderer is split by concern and built on TextUI:
 | `md-render-block.el` | Rules, callouts, block quotes, source panels, continuation layout |
 | `md-render-media.el` | Images, LaTeX math and diagram previews |
 | `md-render-table.el` | Text-grid tables and the TextUI `md-render-table-widget` |
+
+Earlier versions of `md-render.el` were adapted from
+[`agent-shell-markdown.el`](https://github.com/xenodium/agent-shell/blob/main/agent-shell-markdown.el).
+The renderer has since been rewritten from scratch as the TextUI-based suite
+above and no longer reuses any of agent-shell's Markdown rendering code.
 
 `md-mode` and its renderer are licensed under GPLv3 or later.
