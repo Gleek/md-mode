@@ -72,9 +72,9 @@ integrations, or long-term compatibility are more important.
 ## Requirements
 
 - Emacs 29.1 or newer
-- [TextUI](https://github.com/yibie/textui) with standalone block-widget
-  support, used when rendered view contains Markdown tables. Editable tables
-  and rendered documents without tables do not load it.
+- [TextUI](https://github.com/yibie/textui) 0.7.0 or newer. The renderer
+  lays out rendered tables through TextUI's block-widget protocol and shares
+  column widths out with its layout geometry.
 
 Optional Rendered-view integrations:
 
@@ -93,19 +93,22 @@ restricted server mode to limit external resource loading.
 
 ## Installation
 
-Install directly from the repository with Emacs:
+Install TextUI first, then `md-mode`, directly from the repositories:
 
 ```text
+M-x package-vc-install RET https://github.com/yibie/textui RET
 M-x package-vc-install RET https://github.com/yibie/md-mode RET
 ```
 
-Or clone the repository and add it to `load-path`:
+Or clone both repositories and add them to `load-path`:
 
 ```sh
+git clone https://github.com/yibie/textui.git
 git clone https://github.com/yibie/md-mode.git
 ```
 
 ```elisp
+(add-to-list 'load-path "/path/to/textui")
 (add-to-list 'load-path "/path/to/md-mode")
 (require 'md-mode)
 ```
@@ -113,6 +116,9 @@ git clone https://github.com/yibie/md-mode.git
 For `straight.el` users:
 
 ```elisp
+(use-package textui
+  :straight (:type git :host github :repo "yibie/textui"))
+
 (use-package md-mode
   :straight (:type git :host github :repo "yibie/md-mode")
   :mode ("\\.md\\'" . md-mode))
@@ -287,6 +293,8 @@ Advanced renderer integration:
 
 | Option | Default | Purpose |
 |--------|---------|---------|
+| `md-render-source-block-copy-symbol` | `"⎘"` | Symbol after a source block's language label; RET or a click on the label copies the block |
+| `md-render-callout-tint` | `0.15` | How strongly a callout's accent color tints its panel background |
 | `md-render-language-mapping` | Common language aliases | Map fenced-block language names to Emacs major modes |
 | `md-render-render-functions` | `(md-render--render-media)` | Register renderers that claim and freeze regions before styling |
 
@@ -422,14 +430,21 @@ are not included.
 Run the complete test suite:
 
 ```sh
-emacs -Q --batch -L . -L test \
+emacs -Q --batch -L . -L /path/to/textui \
   -l test/md-render-tests.el \
   -l test/md-mode-tests.el \
   -f ert-run-tests-batch-and-exit
 ```
 
-`md-render.el` is adapted from
-[`agent-shell-markdown.el`](https://github.com/xenodium/agent-shell/blob/main/agent-shell-markdown.el)
-by Alvaro Ramirez.
+The renderer is split by concern and built on TextUI:
 
-`md-mode` and its adapted renderer are licensed under GPLv3 or later.
+| File | Owns |
+| --- | --- |
+| `md-render.el` | Entry points: `md-render-replace-markup`, `md-render-convert` |
+| `md-render-core.el` | Faces, options, protected ranges, render context, reconstruction, streaming watermark |
+| `md-render-inline.el` | Emphasis, headings, inline code, links |
+| `md-render-block.el` | Rules, callouts, block quotes, source panels, continuation layout |
+| `md-render-media.el` | Images, LaTeX math and diagram previews |
+| `md-render-table.el` | Text-grid tables and the TextUI `md-render-table-widget` |
+
+`md-mode` and its renderer are licensed under GPLv3 or later.

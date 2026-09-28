@@ -6,7 +6,7 @@
 ;; Assisted-by: Codex:gpt-5.5
 ;; URL: https://github.com/yibie/md-mode
 ;; Version: 0.4.1
-;; Package-Requires: ((emacs "29.1"))
+;; Package-Requires: ((emacs "29.1") (textui "0.7.0"))
 ;; Keywords: wp, convenience
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -42,9 +42,7 @@
 (require 'seq)
 (require 'subr-x)
 (require 'text-property-search)
-
-(declare-function textui-attach-widget "textui" (widget from to))
-(declare-function textui-layout-widget "textui" (widget width))
+(require 'textui)
 
 (defgroup md nil
   "Edit and render Markdown buffers."
@@ -2555,9 +2553,6 @@ When FORCE is non-nil, relayout even when the character width is unchanged."
   (interactive)
   (md-mode--ensure-mode)
   (unless md-mode--rendered-p
-    (when (and (md-render-tables-present-p)
-               (not (require 'textui nil t)))
-      (user-error "Rendered table widgets require TextUI"))
     (outline-show-all)
     (let ((modified (buffer-modified-p))
           (buffer-undo-list t)

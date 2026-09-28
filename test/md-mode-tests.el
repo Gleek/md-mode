@@ -2177,9 +2177,11 @@ always overstates the usable width."
     (font-lock-ensure)
     (md-mode-render)
     (font-lock-fontify-region (point-min) (point-max))
-    (should (equal (substring-no-properties
-                    (get-text-property (point-min) 'display))
-                   "▎"))
+    (goto-char (point-min))
+    (search-forward "> [!TIP]")
+    (should (get-text-property (match-beginning 0) 'display))
+    (should (eq (get-text-property (match-beginning 0) 'md-render-callout)
+                'TIP))
     (md-mode-show-source)
     (should (memq 'display font-lock-extra-managed-props))))
 

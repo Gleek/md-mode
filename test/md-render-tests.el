@@ -239,7 +239,7 @@ after **b2**"))
 " nil)
                    ("
 " (md-render-source-block))
-                   ("snippet ⧉" (md-render-source-block-language))
+                   ("snippet ⎘" (md-render-source-block-language))
                    ("
 
 **not bold**
@@ -449,7 +449,7 @@ after [c](w)"))
 " nil)
                    ("
 " (md-render-source-block))
-                   ("snippet ⧉" (md-render-source-block-language))
+                   ("snippet ⎘" (md-render-source-block-language))
                    ("
 
 [b](v)
@@ -459,7 +459,7 @@ after [c](w)"))
                    ("c" (md-render-link))))))
 
 (ert-deftest md-render-convert-source-block-no-language ()
-  ;; Plain fenced block (no language): fences deleted, a "snippet ⧉"
+  ;; Plain fenced block (no language): fences deleted, a "snippet ⎘"
   ;; header is inserted directly above the body as real buffer text
   ;; (no display property), bracketed by tinted vpad newlines so the
   ;; panel reads as a contiguous block.  Body chars carry the
@@ -472,7 +472,7 @@ body
 ```"))
                  '(("
 " (md-render-source-block))
-                   ("snippet ⧉" (md-render-source-block-language))
+                   ("snippet ⎘" (md-render-source-block-language))
                    ("
 
 body
@@ -481,8 +481,8 @@ body
 
 (ert-deftest md-render-convert-source-block-language-label ()
   ;; Every fence renders with an actionable label inserted as real
-  ;; buffer text directly above the body — "LANG ⧉" when a language
-  ;; is declared, "snippet ⧉" otherwise.  No display property, no
+  ;; buffer text directly above the body — "LANG ⎘" when a language
+  ;; is declared, "snippet ⎘" otherwise.  No display property, no
   ;; overlays.  The label sits between tinted vpad newlines that
   ;; make the surrounding panel read as a contiguous block.  RET or
   ;; mouse-1 anywhere on the label kills the body to the kill ring.
@@ -494,13 +494,13 @@ print(\"hi\")
 body
 ```
 ")))
-    (should (string-prefix-p "\npython ⧉\n\nprint("
+    (should (string-prefix-p "\npython ⎘\n\nprint("
                              (substring-no-properties with-lang)))
-    (should (string-prefix-p "\nsnippet ⧉\n\nbody"
+    (should (string-prefix-p "\nsnippet ⎘\n\nbody"
                              (substring-no-properties no-lang)))
     ;; Label face + actionable props on both the first name char and
-    ;; the ⧉ glyph.  The leading char is the tinted vpad `\\n', so the
-    ;; label starts at index 1; "python " is 7 chars, so the ⧉ glyph
+    ;; the ⎘ glyph.  The leading char is the tinted vpad `\\n', so the
+    ;; label starts at index 1; "python " is 7 chars, so the ⎘ glyph
     ;; sits at index 8.
     (dolist (i '(1 8))
       (should (eq (get-text-property i 'face with-lang)
@@ -508,6 +508,26 @@ body
       (should (eq (get-text-property i 'mouse-face with-lang)
                   'highlight))
       (should (keymapp (get-text-property i 'keymap with-lang))))))
+
+(ert-deftest md-render-source-block-panel-prefix-is-plain-tint ()
+  ;; The code panel's left edge is two columns of margin and two
+  ;; columns of panel background -- the same edge callouts use.
+  (let* ((s (md-render-convert "```python\nprint(1)\n```\n"))
+         (body (string-search "print" s))
+         (prefix (concat "  " (propertize "  " 'face 'md-render-source-block))))
+    (should (equal-including-properties
+             (get-text-property body 'line-prefix s) prefix))
+    (should (equal-including-properties
+             (get-text-property body 'wrap-prefix s) prefix))
+    (should (equal-including-properties
+             (get-text-property 1 'line-prefix s) prefix))))
+
+(ert-deftest md-render-source-block-copy-symbol-is-customizable ()
+  (let ((md-render-source-block-copy-symbol "copy"))
+    (should (string-prefix-p "\npython copy\n"
+                             (substring-no-properties
+                              (md-render-convert
+                               "```python\nprint(1)\n```\n"))))))
 
 (ert-deftest md-render-convert-source-block-nested-fences ()
   ;; A 4-backtick outer fence wraps inner 3-backtick fences as
@@ -526,7 +546,7 @@ print(\"hi\")
 ```
 ````"))))
     (should (equal rendered "
-markdown ⧉
+markdown ⎘
 
 ```python
 print(\"hi\")
@@ -535,7 +555,7 @@ print(\"hi\")
 "))))
 
 (ert-deftest md-render-convert-source-block-with-language ()
-  ;; `emacs-lisp' source block: fences deleted, an "emacs-lisp ⧉"
+  ;; `emacs-lisp' source block: fences deleted, an "emacs-lisp ⎘"
   ;; header is inserted as buffer text bracketed by tinted vpad
   ;; newlines, then the body chars get the language's `font-lock'
   ;; faces layered over the `md-render-source-block' bg.
@@ -548,7 +568,7 @@ print(\"hi\")
 ```"))
                  '(("
 " (md-render-source-block))
-                   ("emacs-lisp ⧉" (md-render-source-block-language))
+                   ("emacs-lisp ⎘" (md-render-source-block-language))
                    ("
 
 (" (md-render-source-block))
@@ -602,7 +622,7 @@ print(\"hi\")
   ;; chunks that split the opening fence, the language line, body
   ;; chars, and the closing fence.  After every chunk the renderer
   ;; is called.  Once the closing fence lands, the final buffer
-  ;; should show the inserted "python ⧉" label above the body, with
+  ;; should show the inserted "python ⎘" label above the body, with
   ;; no raw fence markers remaining.
   (with-temp-buffer
     (dolist (chunk '("``" "`p" "yt" "hon\n"
@@ -614,7 +634,7 @@ print(\"hi\")
       (md-render-replace-markup))
     (should (equal (substring-no-properties (buffer-string))
                    "
-python ⧉
+python ⎘
 
 print(\"hi\")
 raise SystemExit
@@ -638,7 +658,7 @@ raise SystemExit
     (should (equal (md-render--deconstruct (buffer-string))
                    '(("
 " (md-render-source-block))
-                     ("snippet ⧉" (md-render-source-block-language))
+                     ("snippet ⎘" (md-render-source-block-language))
                      ("
 
 **not bold**
@@ -1365,7 +1385,7 @@ A " nil)
 " nil)
              ("
 " (md-render-source-block))
-             ("snippet ⧉" (md-render-source-block-language))
+             ("snippet ⎘" (md-render-source-block-language))
              ("
 
 **not bold**
@@ -1430,50 +1450,166 @@ A " nil)
 
 (ert-deftest md-render-convert-blockquote-single-level ()
   ;; `> text\n' keeps the `>' in the buffer (source round-trips) but
-  ;; shows `▌' as a display override.  The line content carries the
+  ;; shows a `┃' bar as a display override.  The line content carries the
   ;; blockquote face.
   (let ((s (md-render-convert "> hello\n")))
     (should (equal (substring-no-properties s) "> hello\n"))
     (should (equal (get-text-property 0 'display s)
-                   (propertize "▌"
-                              'face 'md-render-blockquote)))
+                   (propertize "┃" 'face 'md-render-blockquote-bar)))
     (should (eq (get-text-property 2 'face s)
                 'md-render-blockquote))
     (should (eq (get-text-property 0 'md-render-frozen s) t))))
 
 (ert-deftest md-render-convert-callout-panel ()
-  ;; GitHub callouts keep their Markdown source but render with a
-  ;; type title, an accent bar, and a panel face across the body.
-  (let* ((s (md-render-convert "> [!TIP]\n> Useful body\n"))
-         (title-pos (string-match "\\[!TIP\\]" s))
-         (body-pos (string-match "Useful body" s))
-         (title-display (get-text-property title-pos 'display s))
-         (bar-display (get-text-property 0 'display s)))
-    (should (equal (substring-no-properties s)
-                   "> [!TIP]\n> Useful body\n"))
-    (should (equal (substring-no-properties title-display) " Tip"))
-    (should (equal (substring-no-properties bar-display) "▎"))
-    (should (eq (get-text-property body-pos 'md-render-callout s) 'TIP))
-    (let ((face (get-text-property body-pos 'face s)))
-      (should (or (eq face 'md-render-callout)
-                  (and (listp face)
-                       (memq 'md-render-callout face)))))))
+  ;; GitHub callouts render as a tinted panel built like a source
+  ;; panel: a padding line above and below, and each `>' plus the blank
+  ;; after it shown as two columns of panel background.  `[!TIP]' shows
+  ;; the title in the kind's accent.  The padding lines are decoration,
+  ;; so the Markdown reconstructs exactly.
+  (cl-letf (((symbol-function 'md-render--callout-face)
+             (lambda (_accent) 'md-render-callout)))
+    (let* ((source "> [!TIP]\n> Useful body\n")
+           (s (md-render-convert source))
+           (title-pos (string-match "\\[!TIP\\]" s))
+           (body-pos (string-match "Useful body" s))
+           (padding (propertize "  " 'face 'md-render-callout))
+           (prefix (concat "  " padding)))
+      (should (equal (substring-no-properties s)
+                     (concat "\n" source "\n")))
+      (dolist (pad (list 0 (1- (length s))))
+        (should (equal (get-text-property pad 'md-render-source s) ""))
+        (should (eq (get-text-property pad 'face s) 'md-render-callout))
+        (should (equal-including-properties
+                 (get-text-property pad 'line-prefix s) prefix))
+        (should (eq (get-text-property pad 'md-render-callout s) 'TIP)))
+      (should (equal-including-properties
+               (get-text-property title-pos 'display s)
+               (propertize "Tip" 'face '(md-render-callout-title
+                                         success md-render-callout))))
+      (dolist (pos (list 1 2 (1- body-pos) (- body-pos 2)))
+        (should (equal-including-properties
+                 (get-text-property pos 'display s) padding)))
+      (should-not (get-text-property body-pos 'display s))
+      (should (eq (get-text-property body-pos 'md-render-callout s) 'TIP))
+      (should (memq 'md-render-callout
+                    (ensure-list (get-text-property body-pos 'face s))))
+      (should (equal (get-text-property body-pos 'line-prefix s) "  "))
+      (should (equal-including-properties
+               (get-text-property body-pos 'wrap-prefix s) prefix))
+      (with-temp-buffer
+        (insert s)
+        (should (equal (md-render-reconstruct (point-min) (point-max))
+                       source))))))
+
+(ert-deftest md-render-callout-panel-fades-its-accent-color ()
+  ;; The panel background is the kind's accent faded into the default
+  ;; background, so TIP is a pale green and WARNING a pale red.
+  (cl-letf (((symbol-function 'face-foreground)
+             (lambda (face &rest _)
+               (pcase face
+                 ('success "#00ff00")
+                 ('warning "#ff0000"))))
+            ((symbol-function 'face-background)
+             (lambda (&rest _) "#ffffff")))
+    (let ((md-render-callout-tint 0.2))
+      (should (equal (md-render--callout-face 'success)
+                     '((:background "#ccffcc" :extend t) md-render-callout)))
+      (should (equal (md-render--callout-face 'warning)
+                     '((:background "#ffcccc" :extend t) md-render-callout)))
+      (let* ((s (md-render-convert "> [!TIP]\n> body\n"))
+             (face (get-text-property (string-search "body" s) 'face s)))
+        (should (member '(:background "#ccffcc" :extend t) face))
+        (should (equal-including-properties
+                 (get-text-property 1 'display s)
+                 (propertize "  " 'face '((:background "#ccffcc" :extend t)
+                                          md-render-callout))))))))
+
+(ert-deftest md-render-callout-panel-falls-back-without-colors ()
+  ;; Without known colors, as on a bare terminal, the panel uses the
+  ;; plain callout face.
+  (cl-letf (((symbol-function 'face-background)
+             (lambda (&rest _) "unspecified-bg")))
+    (should (eq (md-render--callout-face 'success) 'md-render-callout))))
+
+(ert-deftest md-render-callout-kinds-use-titles-and-accents ()
+  ;; Every GitHub callout kind shows its own title in its accent face.
+  (pcase-dolist (`(,kind ,title ,accent)
+                 '(("NOTE" "Note" font-lock-constant-face)
+                   ("TIP" "Tip" success)
+                   ("IMPORTANT" "Important" font-lock-keyword-face)
+                   ("WARNING" "Warning" warning)
+                   ("CAUTION" "Caution" error)))
+    (let* ((s (md-render-convert (format "> [!%s]\n> body\n" kind)))
+           (display (get-text-property (string-search "[!" s) 'display s)))
+      (should (equal (substring-no-properties display) title))
+      (should (equal (get-text-property 0 'face display)
+                     `(md-render-callout-title ,accent md-render-callout)))
+      (should (eq (get-text-property (string-search "body" s)
+                                     'md-render-callout s)
+                  (intern kind))))))
+
+(ert-deftest md-render-callout-keeps-indented-content-and-empty-lines ()
+  ;; Only one blank after `>' is padding: deeper indentation stays
+  ;; visible, and a bare `>' line is still part of the panel.
+  (let* ((s (md-render-convert "> [!NOTE]\n>\n>   indented\n"))
+         (bare (string-search ">\n" s))
+         (indented (string-search ">   indented" s)))
+    (should (get-text-property bare 'display s))
+    (should (eq (get-text-property bare 'md-render-callout s) 'NOTE))
+    (should (get-text-property indented 'display s))
+    (should (get-text-property (1+ indented) 'display s))
+    (should-not (get-text-property (+ indented 2) 'display s))))
+
+(ert-deftest md-render-callout-ends-at-first-non-quote-line ()
+  ;; The panel covers the header and the `>' lines directly below it;
+  ;; the first other line ends it.
+  (let* ((s (md-render-convert "> [!NOTE]\n> inside\noutside\n"))
+         (outside (string-search "outside" s)))
+    (should (eq (get-text-property (string-search "inside" s)
+                                   'md-render-callout s)
+                'NOTE))
+    (should-not (get-text-property outside 'md-render-callout s))
+    (should-not (get-text-property outside 'line-prefix s))
+    (should-not (memq 'md-render-callout
+                      (ensure-list (get-text-property outside 'face s))))))
+
+(ert-deftest md-render-callout-unknown-kind-is-a-blockquote ()
+  ;; Only the five GitHub kinds make a callout; anything else is an
+  ;; ordinary quote with its bar.
+  (let ((s (md-render-convert "> [!FOO]\n> body\n")))
+    (should-not (get-text-property 0 'md-render-callout s))
+    (should (equal (get-text-property 0 'display s)
+                   (propertize "┃" 'face 'md-render-blockquote-bar)))))
+
+(ert-deftest md-render-callout-inside-fence-stays-raw ()
+  ;; A callout inside a fenced block is code, not a panel.
+  (let ((s (md-render-convert "```\n> [!TIP]\n> body\n```\n")))
+    (should (string-search "> [!TIP]" (substring-no-properties s)))
+    (should-not (text-property-not-all 0 (length s) 'md-render-callout nil
+                                       s))))
+
+(ert-deftest md-render-callout-and-quote-reconstruct-source ()
+  ;; Panels and quotes only decorate; the Markdown comes back exactly.
+  (with-temp-buffer
+    (let ((source (concat "> [!WARNING]\n> Mind **this**\n\n"
+                          "> quoted *text*\n>> nested\n")))
+      (insert source)
+      (md-render-replace-markup :force t :render-images nil)
+      (should (equal (md-render-reconstruct (point-min) (point-max))
+                     source)))))
 
 (ert-deftest md-render-convert-blockquote-multi-level ()
   ;; Each leading `>' gets its own bar — `>> ' shows two, `>>> '
   ;; shows three.  Whitespace between `>'s is preserved.
   (let ((s (md-render-convert ">> level 2\n")))
     (should (equal (get-text-property 0 'display s)
-                   (propertize "▌"
-                              'face 'md-render-blockquote)))
+                   (propertize "┃" 'face 'md-render-blockquote-bar)))
     (should (equal (get-text-property 1 'display s)
-                   (propertize "▌"
-                              'face 'md-render-blockquote))))
+                   (propertize "┃" 'face 'md-render-blockquote-bar))))
   (let ((s (md-render-convert ">>> level 3\n")))
     (dolist (i '(0 1 2))
       (should (equal (get-text-property i 'display s)
-                     (propertize "▌"
-                                'face 'md-render-blockquote))))))
+                     (propertize "┃" 'face 'md-render-blockquote-bar))))))
 
 (ert-deftest md-render-convert-blockquote-with-bold ()
   ;; Inline markup inside a blockquote still renders — bold runs
@@ -1499,10 +1635,42 @@ A " nil)
     (insert "lo\n")
     (md-render-replace-markup)
     (should (equal (get-text-property (point-min) 'display)
-                   (propertize "▌"
-                              'face 'md-render-blockquote)))
+                   (propertize "┃" 'face 'md-render-blockquote-bar)))
     (should (eq (get-text-property (+ (point-min) 2) 'face)
                 'md-render-blockquote))))
+
+(ert-deftest md-render-blockquote-indents-like-a-source-panel ()
+  ;; A quote line is indented by the same two-column margin as source
+  ;; panels, so bar and panel edges line up; wrapped lines repeat the
+  ;; bar.  Quotes get no panel background, and the line after the quote
+  ;; is untouched.
+  (let* ((s (md-render-convert "> quoted\nplain\n"))
+         (plain (string-search "plain" s))
+         (bar (propertize "┃" 'face 'md-render-blockquote-bar)))
+    (should (equal (get-text-property 0 'line-prefix s) "  "))
+    (should (equal-including-properties
+             (get-text-property 2 'wrap-prefix s) (concat "  " bar " ")))
+    (should-not (memq 'md-render-callout
+                      (ensure-list (get-text-property 2 'face s))))
+    (dolist (property '(face display line-prefix md-render-frozen))
+      (should-not (get-text-property plain property s)))))
+
+(ert-deftest md-render-nested-blockquote-wraps-under-every-bar ()
+  (let ((s (md-render-convert ">> deep\n"))
+        (bar (propertize "┃" 'face 'md-render-blockquote-bar)))
+    (should (equal-including-properties
+             (get-text-property 3 'wrap-prefix s)
+             (concat "  " bar bar " ")))))
+
+(ert-deftest md-render-blockquote-bars-skip-spaced-markers ()
+  ;; `> > x' is a two-level quote: each `>' gets a bar and the space
+  ;; between them stays.
+  (let ((s (md-render-convert "> > two levels\n"))
+        (bar (propertize "┃" 'face 'md-render-blockquote-bar)))
+    (should (equal (get-text-property 0 'display s) bar))
+    (should-not (get-text-property 1 'display s))
+    (should (equal (get-text-property 2 'display s) bar))
+    (should-not (get-text-property 4 'display s))))
 
 (ert-deftest md-render-blockquote-inside-fence-stays-raw ()
   ;; A `>'-prefixed line inside a fenced code block must not be
@@ -1963,11 +2131,11 @@ exercised by the editing in the -all-math-cases test.)"
                    nil))))
       (insert "```math\n\\frac{a}{b}\n```\n")
       (md-render-replace-markup)
-      ;; Fences and body survive verbatim: no code-panel "⧉" label was
+      ;; Fences and body survive verbatim: no code-panel "⎘" label was
       ;; inserted and the frozen claim still stands for later passes.
       (should (equal (substring-no-properties (buffer-string))
                      "```math\n\\frac{a}{b}\n```\n"))
-      (should-not (string-match-p "⧉" (buffer-string)))
+      (should-not (string-match-p "⎘" (buffer-string)))
       (should (eq t (get-text-property (point-min)
                                        'md-render-frozen))))))
 
@@ -2068,7 +2236,7 @@ $$E = mc^2$$
       ;; too (`:inline-code-ranges' kept it out of reach).
       (should (equal (buffer-substring-no-properties (point-min) (point-max))
                      "
-python ⧉
+python ⎘
 
 q = \"$$not math$$\"
 
@@ -2223,7 +2391,7 @@ for a fully-selected buffer."
                    "def foo():\n    return 1"))
     ;; The language label above the body is not the body.
     (goto-char (point-min))
-    (search-forward "⧉")
+    (search-forward "⎘")
     (should-not (md-render-source-block-at-point (1- (point))))))
 
 ;;; Optional Math and Mermaid rendering.
@@ -2561,7 +2729,7 @@ for a fully-selected buffer."
             ".png"
             (get-text-property (1- (point)) 'md-render-media-file)))
           (should-not (string-match-p
-                       "mermaid ⧉"
+                       "mermaid ⎘"
                        (buffer-substring-no-properties
                         (point-min) (point-max)))))))))
 
@@ -2934,6 +3102,368 @@ for a fully-selected buffer."
                   font "second")
             (should-not (eq cache (md-render--table-widget-measurements
                                    (selected-window) #'ignore)))))))))
+
+;;;; Math and diagram previews: failure paths and edge cases
+
+(defmacro md-render-tests--with-graphic-tools (tools &rest body)
+  "Run BODY on a graphical display where only TOOLS are installed.
+TOOLS is a list of executable names that `executable-find' resolves
+to /fake/NAME."
+  (declare (indent 1) (debug (form body)))
+  `(cl-letf (((symbol-function 'display-graphic-p) (lambda (&rest _) t))
+             ((symbol-function 'executable-find)
+              (lambda (command)
+                (and (member command ,tools) (concat "/fake/" command)))))
+     ,@body))
+
+(defun md-render-tests--capture-watcher (place)
+  "Return a `md-render--watch-media' stub that records watchers in PLACE.
+PLACE is a symbol whose value becomes the list of recorded watchers,
+most recent first."
+  (lambda (backend _source _file marker label)
+    (set place (cons (list (current-buffer) marker label backend)
+                     (symbol-value place)))))
+
+(defvar md-render-tests--watchers nil
+  "Watchers recorded by `md-render-tests--capture-watcher'.")
+
+(ert-deftest md-render-media-error-shows-warning-and-drops-centering ()
+  ;; A failed render replaces the image slot with a warning that names
+  ;; the preview and carries the renderer's message as help text.  The
+  ;; block-math alignment spacer loses its display so the warning is
+  ;; not pushed off-center by a stale `:align-to'.
+  (with-temp-buffer
+    (setq md-render-tests--watchers nil)
+    (cl-letf (((symbol-function 'md-render--watch-media)
+               (md-render-tests--capture-watcher 'md-render-tests--watchers)))
+      (insert "$$x$$")
+      (md-render--insert-media
+       :start (point-min) :end (point-max)
+       :source "$$x$$" :render-source "$$x$$"
+       :backend 'math :block-p t :label "Math")
+      (pcase-let* ((`(,watcher) md-render-tests--watchers)
+                   (`(,_buffer ,marker . ,_) watcher)
+                   (file (get-text-property marker 'md-render-media-file)))
+        (put-text-property (1- marker) marker 'display '(space :width (1)))
+        (md-render--media-apply watcher file "LaTeX Error: Undefined")
+        (let ((display (get-text-property marker 'display)))
+          (should (equal (substring-no-properties display) "⚠ Math"))
+          (should (eq (get-text-property 0 'face display) 'error))
+          (should (equal (get-text-property 0 'help-echo display)
+                         "LaTeX Error: Undefined")))
+        (should-not (get-text-property (1- marker) 'display))
+        (should (equal (md-render-reconstruct (point-min) (point-max))
+                       "$$x$$"))))))
+
+(ert-deftest md-render-media-image-error-falls-back-to-warning ()
+  ;; An output file that Emacs cannot decode is reported like a render
+  ;; failure instead of leaving an empty placeholder.
+  (with-temp-buffer
+    (setq md-render-tests--watchers nil)
+    (cl-letf (((symbol-function 'md-render--watch-media)
+               (md-render-tests--capture-watcher 'md-render-tests--watchers))
+              ((symbol-function 'create-image)
+               (lambda (&rest _) (error "Corrupt SVG"))))
+      (insert "diagram")
+      (md-render--insert-media
+       :start (point-min) :end (point-max)
+       :source "diagram" :render-source "digraph { a }"
+       :backend 'graphviz :block-p t :label "Graphviz")
+      (pcase-let* ((`(,watcher) md-render-tests--watchers)
+                   (`(,_buffer ,marker . ,_) watcher))
+        (md-render--media-apply
+         watcher (get-text-property marker 'md-render-media-file) nil)
+        (let ((display (get-text-property marker 'display)))
+          (should (equal (substring-no-properties display) "⚠ Graphviz"))
+          (should (equal (get-text-property 0 'help-echo display)
+                         "Corrupt SVG")))))))
+
+(ert-deftest md-render-media-apply-ignores-stale-placeholders ()
+  ;; Results arrive asynchronously.  When the placeholder has since been
+  ;; replaced, or its buffer killed, the result is dropped quietly.
+  (let (watcher file)
+    (with-temp-buffer
+      (setq md-render-tests--watchers nil)
+      (cl-letf (((symbol-function 'md-render--watch-media)
+                 (md-render-tests--capture-watcher
+                  'md-render-tests--watchers))
+                ((symbol-function 'create-image)
+                 (lambda (&rest _) '(image :type svg :fake t))))
+        (insert "\\(x\\)")
+        (md-render--insert-media
+         :start (point-min) :end (point-max)
+         :source "\\(x\\)" :render-source "\\(x\\)"
+         :backend 'math :block-p nil :label "Math")
+        (setq watcher (car md-render-tests--watchers)
+              file (get-text-property (nth 1 watcher)
+                                      'md-render-media-file))
+        (md-render--media-apply watcher (concat file ".other") nil)
+        (should-not (get-text-property (nth 1 watcher) 'display))
+        (put-text-property (point-min) (point-max)
+                           'md-render-media-file "/elsewhere.svg")
+        (md-render--media-apply watcher file nil)
+        (should-not (get-text-property (nth 1 watcher) 'display))))
+    (should-not (buffer-live-p (car watcher)))
+    (md-render--media-apply watcher file nil)))
+
+(ert-deftest md-render-media-identical-sources-share-one-process ()
+  ;; Two diagrams with the same source need one render.  Both
+  ;; placeholders wait on the same job and both show the result; the
+  ;; input file and log buffer are cleaned up once the job ends.
+  (let ((cache-directory (make-temp-file "md-render-media-" t))
+        (calls 0)
+        arguments)
+    (unwind-protect
+        (with-temp-buffer
+          (clrhash md-render--media-jobs)
+          (let ((md-render-cache-directory cache-directory)
+                (md-render-math-enabled nil)
+                (md-render-render-functions '(md-render--render-media)))
+            (md-render-tests--with-graphic-tools '("dot")
+              (cl-letf (((symbol-function 'make-process)
+                         (lambda (&rest args)
+                           (setq calls (1+ calls)
+                                 arguments args)
+                           'fake-process))
+                        ((symbol-function 'process-status)
+                         (lambda (_process) 'exit))
+                        ((symbol-function 'process-exit-status)
+                         (lambda (_process) 0))
+                        ((symbol-function 'create-image)
+                         (lambda (&rest _) '(image :type svg :fake t))))
+                (insert "```dot\ndigraph { a -> b }\n```\n\n"
+                        "```graphviz\ndigraph { a -> b }\n```\n")
+                (md-render-replace-markup :force t :render-images nil)
+                (should (= calls 1))
+                (let* ((command (plist-get arguments :command))
+                       (output (car (last command)))
+                       (input (nth (- (length command) 3) command)))
+                  (should (string-suffix-p ".dot" input))
+                  (should (file-exists-p input))
+                  (should (= (length (gethash output md-render--media-jobs))
+                             2))
+                  (with-temp-file output (insert "<svg/>"))
+                  (funcall (plist-get arguments :sentinel)
+                           'fake-process "finished\n")
+                  (should-not (gethash output md-render--media-jobs))
+                  (should-not (file-exists-p input))
+                  (should-not (buffer-live-p (plist-get arguments :buffer)))
+                  (let ((shown 0))
+                    (dotimes (i (buffer-size))
+                      (let ((pos (+ (point-min) i)))
+                        (when (equal (get-text-property
+                                      pos 'md-render-media-file)
+                                     output)
+                          (should (equal (get-text-property pos 'display)
+                                         '(image :type svg :fake t)))
+                          (setq shown (1+ shown)))))
+                    (should (= shown 2))))))))
+      (clrhash md-render--media-jobs)
+      (delete-directory cache-directory t))))
+
+(ert-deftest md-render-media-process-failure-reports-log-tail ()
+  ;; A renderer that exits non-zero shows a warning whose help text is
+  ;; the end of the renderer's output, so the user can see why.
+  (let ((cache-directory (make-temp-file "md-render-media-" t))
+        arguments)
+    (unwind-protect
+        (with-temp-buffer
+          (clrhash md-render--media-jobs)
+          (let ((md-render-cache-directory cache-directory)
+                (md-render-math-enabled nil)
+                (md-render-render-functions '(md-render--render-media)))
+            (md-render-tests--with-graphic-tools '("plantuml")
+              (cl-letf (((symbol-function 'make-process)
+                         (lambda (&rest args) (setq arguments args) 'proc))
+                        ((symbol-function 'process-status)
+                         (lambda (_process) 'exit))
+                        ((symbol-function 'process-exit-status)
+                         (lambda (_process) 1)))
+                (insert "```plantuml\n@startuml\nA -> \n@enduml\n```\n")
+                (md-render-replace-markup :force t :render-images nil)
+                (with-current-buffer (plist-get arguments :buffer)
+                  (insert "\nError line 2 in file: syntax error\n\n"))
+                (funcall (plist-get arguments :sentinel) 'proc "exited\n")
+                (let* ((pos (text-property-not-all
+                             (point-min) (point-max) 'md-render-media-file nil))
+                       (display (get-text-property pos 'display)))
+                  (should (equal (substring-no-properties display)
+                                 "⚠ PlantUML"))
+                  (should (equal (get-text-property 0 'help-echo display)
+                                 "Error line 2 in file: syntax error")))))))
+      (clrhash md-render--media-jobs)
+      (delete-directory cache-directory t))))
+
+(ert-deftest md-render-media-process-start-error-shows-warning ()
+  ;; When the renderer cannot even start, the placeholder shows the
+  ;; error right away and no job is left pending.
+  (let ((cache-directory (make-temp-file "md-render-media-" t)))
+    (unwind-protect
+        (with-temp-buffer
+          (clrhash md-render--media-jobs)
+          (let ((md-render-cache-directory cache-directory)
+                (md-render-math-enabled nil)
+                (md-render-render-functions '(md-render--render-media)))
+            (md-render-tests--with-graphic-tools '("mmdc")
+              (cl-letf (((symbol-function 'make-process)
+                         (lambda (&rest _)
+                           (error "Searching for program: No such file")))
+                        ((symbol-function 'md-render--mermaid-browser)
+                         #'ignore))
+                (insert "```mermaid\ngraph TD\n  A --> B\n```\n")
+                (md-render-replace-markup :force t :render-images nil)
+                (let* ((pos (text-property-not-all
+                             (point-min) (point-max) 'md-render-media-file nil))
+                       (display (get-text-property pos 'display)))
+                  (should (equal (substring-no-properties display)
+                                 "⚠ Mermaid"))
+                  (should (string-match-p "No such file"
+                                          (get-text-property
+                                           0 'help-echo display))))
+                (should (zerop (hash-table-count md-render--media-jobs)))
+                (should-not (directory-files cache-directory nil
+                                             "\\.mmd\\'"))))))
+      (clrhash md-render--media-jobs)
+      (delete-directory cache-directory t))))
+
+(ert-deftest md-render-math-process-uses-org-dvisvgm-pipeline ()
+  ;; Math is rendered by a clean batch Emacs running Org's LaTeX
+  ;; preview through dvisvgm, with the theme foreground, a transparent
+  ;; background and the configured scale.
+  (let ((cache-directory (make-temp-file "md-render-media-" t))
+        arguments)
+    (unwind-protect
+        (let ((md-render-cache-directory cache-directory)
+              (md-render-math-scale 1.5))
+          (cl-letf (((symbol-function 'executable-find)
+                     (lambda (command) (concat "/fake/" command)))
+                    ((symbol-function 'md-render--theme-foreground)
+                     (lambda () "#123456"))
+                    ((symbol-function 'make-process)
+                     (lambda (&rest args) (setq arguments args) 'proc)))
+            (let ((file (md-render--media-cache-file 'math "\\(x^2\\)")))
+              (md-render--start-media-process 'math "\\(x^2\\)" file)
+              (pcase-let* ((command (plist-get arguments :command))
+                           (`(,emacs ,quick ,batch ,eval ,form) command)
+                           (input (concat (file-name-sans-extension file)
+                                          ".formula")))
+                (should (equal emacs "/fake/emacs"))
+                (should (equal (list quick batch eval)
+                               '("-Q" "--batch" "--eval")))
+                (dolist (needle '("org-create-formula-image" "dvisvgm"
+                                  "\"#123456\"" "\"Transparent\"" "1.5"))
+                  (should (string-search needle form)))
+                (should (string-search (prin1-to-string file) form))
+                (should (equal (with-temp-buffer
+                                 (insert-file-contents input)
+                                 (buffer-string))
+                               "\\(x^2\\)"))
+                (should (string-prefix-p "md-render-math-"
+                                         (plist-get arguments :name)))
+                (kill-buffer (plist-get arguments :buffer))))))
+      (delete-directory cache-directory t))))
+
+(ert-deftest md-render-fenced-math-renders-as-display-math ()
+  ;; A ```math fence becomes block math: the renderer receives the body
+  ;; wrapped in \[ \], and the placeholder still reconstructs the fence.
+  (with-temp-buffer
+    (let ((md-render-render-functions '(md-render--render-media))
+          sources)
+      (md-render-tests--with-graphic-tools '("emacs" "latex" "dvisvgm")
+        (cl-letf (((symbol-function 'md-render--watch-media)
+                   (lambda (backend source _file _marker label)
+                     (push (list backend source label) sources))))
+          (insert "```math\nx^2 + y^2\n```\nafter\n")
+          (let ((source (buffer-string)))
+            (md-render-replace-markup :force t :render-images nil)
+            (should (equal sources '((math "\\[\nx^2 + y^2\n\\]" "Math"))))
+            (should (string-prefix-p "\n  \n\nafter"
+                                     (buffer-substring-no-properties
+                                      (point-min) (point-max))))
+            (should (equal (md-render-reconstruct (point-min) (point-max))
+                           source))))))))
+
+(ert-deftest md-render-unavailable-diagram-tool-keeps-code-panel ()
+  ;; Without the diagram tool, a diagram fence is ordinary code: it
+  ;; gets the source panel and label instead of a placeholder.
+  (with-temp-buffer
+    (let ((md-render-render-functions '(md-render--render-media)))
+      (md-render-tests--with-graphic-tools '()
+        (insert "```dot\ndigraph { a }\n```\n")
+        (md-render-replace-markup :force t :render-images nil)
+        (should (string-prefix-p "\ndot ⎘\n\ndigraph { a }"
+                                 (buffer-substring-no-properties
+                                  (point-min) (point-max))))
+        (should-not (text-property-not-all
+                     (point-min) (point-max) 'md-render-media-file nil))))))
+
+(ert-deftest md-render-disabled-diagram-backend-keeps-code-panel ()
+  ;; Turning a backend off wins over an installed tool.
+  (with-temp-buffer
+    (let ((md-render-render-functions '(md-render--render-media))
+          (md-render-mermaid-enabled nil))
+      (md-render-tests--with-graphic-tools '("mmdc")
+        (insert "```mermaid\ngraph TD\n```\n")
+        (md-render-replace-markup :force t :render-images nil)
+        (should (string-prefix-p "\nmermaid ⎘"
+                                 (buffer-substring-no-properties
+                                  (point-min) (point-max))))))))
+
+(ert-deftest md-render-media-renderer-skips-text-terminals ()
+  ;; On a text terminal the media renderer does nothing at all, so math
+  ;; and diagram fences keep their source.
+  (with-temp-buffer
+    (cl-letf (((symbol-function 'display-graphic-p) (lambda (&rest _) nil))
+              ((symbol-function 'executable-find)
+               (lambda (command) (concat "/fake/" command))))
+      (insert "\\(x\\)\n```mermaid\ngraph TD\n```\n")
+      (let ((before (buffer-string)))
+        (should-not (md-render--render-media (md-render-context)))
+        (should (equal-including-properties (buffer-string) before))))))
+
+(ert-deftest md-render-unclosed-paired-math-holds-watermark ()
+  ;; An opened \( or $$ whose closer has not streamed in yet holds the
+  ;; streaming watermark at the opener, so the delimiters are never
+  ;; consumed by emphasis; once the closer arrives the span is claimed.
+  (dolist (case '(("\\(a_b" "_c\\) done\n")
+                  ("$$a_b" "_c$$ done\n")
+                  ("\\[a_b" "_c\\] done\n")))
+    (pcase-let ((`(,opening ,closing) case))
+      (with-temp-buffer
+        (let ((md-render-render-functions '(md-render--render-media)))
+          (md-render-tests--with-graphic-tools '()
+            (insert "Intro line\n" opening)
+            (md-render-replace-markup)
+            (should (= (get-text-property (point-min) 'md-render-watermark)
+                       (1+ (length "Intro line\n"))))
+            (should (string-suffix-p opening (buffer-string)))
+            (goto-char (point-max))
+            (insert closing)
+            (md-render-replace-markup)
+            (search-backward "a_b_c")
+            (should (get-text-property (point) 'md-render-frozen))
+            (should (equal (md-render-reconstruct (point-min) (point-max))
+                           (concat "Intro line\n" opening closing)))))))))
+
+(ert-deftest md-render-single-dollar-math-digit-rules ()
+  ;; `$5$' is math because its content has no space; a price range and
+  ;; a closer followed by a digit are not.
+  (dolist (case '(("$5$ ok" "$5$" t)
+                  ("from $5 to $10" "$5 to $" nil)
+                  ("$x$1 y" "$x$" nil)))
+    (pcase-let ((`(,text ,span ,math-p) case))
+      (with-temp-buffer
+        (let ((md-render-render-functions '(md-render--render-media)))
+          (md-render-tests--with-graphic-tools '()
+            (insert text)
+            (md-render-replace-markup :force t :render-images nil)
+            (should (equal (buffer-string) text))
+            (goto-char (point-min))
+            (search-forward span)
+            (should (eq (and (get-text-property (match-beginning 0)
+                                                'md-render-frozen)
+                             t)
+                        math-p))))))))
 
 (provide 'md-render-tests)
 
