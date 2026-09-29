@@ -167,6 +167,7 @@ an http(s) image or cannot be fetched."
 
 (defun md-render--resolve-image-url (url &optional image-cache-directory)
   "Return the existing local file that URL refers to, or nil.
+Resolve relative paths against `default-directory'.
 Remote images are fetched into IMAGE-CACHE-DIRECTORY when it is given."
   (if (string-match-p "\\`https?://" url)
       (md-render--fetch-remote-image url image-cache-directory)
@@ -178,6 +179,9 @@ Remote images are fetched into IMAGE-CACHE-DIRECTORY when it is given."
                        ((or (file-name-absolute-p url)
                             (string-prefix-p "./" url)
                             (string-prefix-p "../" url))
+                        url)
+                       ((not (string-match-p
+                              "\\`[[:alpha:]][[:alnum:]+.-]*:" url))
                         url)))
                 (file (expand-file-name path))
                 ((file-exists-p file)))

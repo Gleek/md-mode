@@ -2095,6 +2095,36 @@ always overstates the usable width."
         (md-mode-show-source)
         (should (equal (buffer-string) source))))))
 
+(ert-deftest md-mode-renders-relative-image-and-restores-source ()
+  (let* ((directory (make-temp-file "md-mode-image-" t))
+         (default-directory (file-name-as-directory directory))
+         (path "2026-09-29_NATO1969软件工程技术_assets/fig_p064.png")
+         (file (expand-file-name path))
+         (source (format "![图 2. 安装步骤](%s)\n" path))
+         (image '(image :type png :fake t)))
+    (unwind-protect
+        (progn
+          (make-directory (file-name-directory file) t)
+          (write-region "fixture" nil file nil 'silent)
+          (with-temp-buffer
+            (insert source)
+            (md-mode)
+            (cl-letf (((symbol-function 'display-graphic-p)
+                       (lambda (&rest _) t))
+                      ((symbol-function 'image-supported-file-p)
+                       (lambda (candidate) (equal candidate file)))
+                      ((symbol-function 'create-image)
+                       (lambda (candidate &rest _)
+                         (should (equal candidate file))
+                         image))
+                      ((symbol-function 'image-flush) #'ignore))
+              (md-mode-render)
+              (should (equal (get-text-property (point-min) 'display)
+                             image))
+              (md-mode-show-source)
+              (should (equal (buffer-string) source)))))
+      (delete-directory directory t))))
+
 (ert-deftest md-mode-mermaid-renders-image-and-restores-code ()
   (with-temp-buffer
     (let ((source "```mermaid\ngraph TD\n  A --> B\n```\n")
