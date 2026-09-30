@@ -1452,6 +1452,23 @@
       (should-not md-mode--table-widgets)
       (should (equal (buffer-string) source)))))
 
+(ert-deftest md-mode-table-measurement-excludes-window-decoration ()
+  (with-temp-buffer
+    (insert "Existing text\n")
+    (let ((original (buffer-string))
+          (position (point)))
+      (cl-letf (((symbol-function 'window-buffer)
+                 (lambda (_) (current-buffer)))
+                ((symbol-function 'window-text-pixel-size)
+                 (lambda (_window from to &rest _args)
+                   (cons (+ 28 (* 7 (- to from))) 14))))
+        (should (= (md-render--table-measure-string
+                    " " (selected-window)) 7))
+        (should (= (md-render--table-measure-string
+                    "MMMM" (selected-window)) 28)))
+      (should (equal (buffer-string) original))
+      (should (= (point) position)))))
+
 (ert-deftest md-mode-table-widget-aligns-mixed-font-borders-in-pixels ()
   (with-temp-buffer
     (let* ((source (concat "| Module | Target | State |\n"
